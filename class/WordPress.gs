@@ -26,8 +26,7 @@ function testWPImage() {
 
 
 /**
- *  WordPressEntry クラスをまず呼び出す｡
- *  投稿するときには そこから生成された､オブジェクトを渡す｡
+
  */
 function testEntryClass() {
   const postDate = Utilities.formatDate(new Date(), 'Asia/Tokyo', "yyyy-MM-dd'T'HH:mm:ss'+09:00'")
@@ -36,6 +35,7 @@ function testEntryClass() {
     'content': "content",
     'status': "draft",
     'slug': "",
+    'date':postDate
   }
   const wordPress = new WordPress(wordPressValueObject)
   wordPress.post()
@@ -94,6 +94,7 @@ class WordPress {
 
     const postUrl = this.wordPressPostValue.postId === "" ? this.baseUrl + 'wp-json/wp/v2/posts' : this.baseUrl + 'wp-json/wp/v2/posts/' + this.wordPressPostValue.postId
     const payload = this.wordPressPostValue
+    //不要なパラメータを削除しないとエラーになる
     const entries = Object.entries(payload)
     for (const [key, value] of entries) {
       if(value === undefined) delete payload[key]
