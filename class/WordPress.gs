@@ -31,17 +31,14 @@ function testWPImage() {
  */
 function testEntryClass() {
   const postDate = Utilities.formatDate(new Date(), 'Asia/Tokyo', "yyyy-MM-dd'T'HH:mm:ss'+09:00'")
-
-
   const wordPressValueObject = {
     'title': "タイトル",
     'content': "content",
     'status': "draft",
     'slug': "",
   }
-
-  const wordPressValueClass = new WordPressPostValue(wordPressValueObject)
-  console.log()
+  const wordPress = new WordPress(wordPressValueObject)
+  wordPress.post()
 
 
 }
@@ -51,8 +48,39 @@ class WordPress {
   /**
    * @param {WordPressPostValue} - wordPressPostValue ワードプレスに投稿するために必要なパラメータを入力するvalueObject
    */
-  constructor(wordPressPostValue) {
-    this.wordPressPostValue = wordPressPostValue
+  constructor({
+    title,
+    content,
+    date,
+    status = "draft",
+    postId = "",
+    slug,
+    tagList = [],
+    categoryList = [],
+    featured_media,
+    isSticky = false
+  }) {
+
+    /**
+     * 
+     */
+    if (Array.isArray(tagList) === false) throw "tagList は配列で指定してください"
+    if (Array.isArray(categoryList) === false) throw "categoryList は配列で指定してください"
+    if (["publish", "future", "draft", "pending", "private"].includes(status) === false) throw "statusはpublish, future, draft, pending, privateを指定してください"
+
+    this.wordPressPostValue = {
+      title: title,
+      content: content,
+      date: date,
+      status: status,
+      postId: postId,
+      slug: slug,
+      tagList: this.getTagIdList(tagList),
+      categoryList: this.getTagIdList(categoryList),
+      featured_media: featured_media,
+      isSticky: isSticky,
+    }
+
     this.baseUrl = PropertiesService.getScriptProperties().getProperty("WP_SITE_URL");
     this.userName = PropertiesService.getScriptProperties().getProperty("WP_USER_NAME");
     this.pass = PropertiesService.getScriptProperties().getProperty("WP_ACCESS_TOKEN");
@@ -60,25 +88,16 @@ class WordPress {
     this.codic = new Codic()
   }
   /**
-   * @param {WordPressValue} - ワードプレスの投稿に必要なValueObject
+   * @return {}
    */
-  post(title, content, date, status, postId, slug, tagList, categoryList, featured_media, isSticky = false) {
-    const postUrl = postId === "" ? this.baseUrl + 'wp-json/wp/v2/posts' : this.baseUrl + 'wp-json/wp/v2/posts' + postId
-    const tagIdList = this.getTagIdList(tagList)
-    const categoryIdList = this.getCategoryIdList(categoryList)
+  post() {
 
-    const payload = {
-      'title': title,
-      'content': content,
-      'status': status,
-      'slug': slug,
-      'tags': tagIdList,
-      'categories': categoryIdList,
-      'sticky': isSticky
+    const postUrl = this.wordPressPostValue.postId === "" ? this.baseUrl + 'wp-json/wp/v2/posts' : this.baseUrl + 'wp-json/wp/v2/posts/' + this.wordPressPostValue.postId
+    const payload = this.wordPressPostValue
+    const entries = Object.entries(payload)
+    for (const [key, value] of entries) {
+      if(value === undefined) delete payload[key]
     }
-
-    if (date !== "") { payload.date = date }
-    if (featured_media !== "") { payload.featured_media = featured_media }
 
     const options = this.getOptions_(payload)
 
@@ -197,67 +216,6 @@ class WordPress {
     return options
   }
 }
-
-class WordPressPostValue {
-  /**
-   * @param {object} - 
-   * 分割代入でオブジェクトを受け取る
-   */
-  constructor({
-    title,
-    content,
-    date,
-    status = "draft",
-    postId = "",
-    slug,
-    tagList = [],
-    categoryList = [],
-    featured_media = "",
-    isSticky = false
-  }) {
-
-    // バリデーション
-    if (Array.isArray(tagList) === false) throw "tagList は配列で指定してください"
-    if (Array.isArray(categoryList) === false) throw "categoryList は配列で指定してください"
-    if (["publish", "future", "draft", "pending", "private"].includes(status) === false) throw "statusはpublish, future, draft, pending, privateを指定してください"
-
-    this.baseUrl = PropertiesService.getScriptProperties().getProperty("WP_SITE_URL");
-    this.userName = PropertiesService.getScriptProperties().getProperty("WP_USER_NAME");
-    this.pass = PropertiesService.getScriptProperties().getProperty("WP_ACCESS_TOKEN");
-
-    this.wordPressValueObject = {
-      title: title,
-      content: content,
-      date: date,
-      status: status,
-      postId: postId,
-      slug: slug,
-      tagList: tagList,
-      categoryList: categoryList,
-      featured_media: featured_media,
-      isSticky: isSticky,
-    }
-  }
-
-  /**
-   * 
-   * @return {}
-   */
-  getPayload() {
-    return this.wordPressValueObject
-  }
-  getBaseUrl(){
-
-  }
-}
-
-
-
-
-
-
-
-
 
 function testCodic() {
   const codic = new Codic()
